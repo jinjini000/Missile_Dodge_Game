@@ -462,7 +462,7 @@ class Main():
                 for missile in missiles:
                     missile.update(player_x, player_y, self.consts.player_size, flares) 
                     
-                    player_rect = pygame.Rect(player_x, player_y, self.consts.player_size, self.consts.player_size)
+                    player_rect = pygame.Rect(player_x, player_y, self.consts.player_size*0.8, self.consts.player_size*0.8)
                     missile_rect = pygame.Rect(missile.x, missile.y, missile.size*0.8, missile.size * 0.8) 
                     
                     if player_rect.colliderect(missile_rect):
