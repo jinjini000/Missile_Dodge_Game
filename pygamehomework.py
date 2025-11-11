@@ -312,32 +312,7 @@ class Func():
         text_rect.topleft = (10, 10) 
         surface.blit(text_surface, text_rect)
 
-    # 게임 변수 초기화 함수
-    def reset_game(self):
-        global game_state, countdown_start_time, score, game_start_time
-        global player_x, player_y, player_vx, player_vy
-        global missiles, next_missile_score
-        global warning_active, warning_start_time, spawn_position
-        global first_missile_spawned 
-        global flares, flares_remaining 
-        
-        game_state = self.consts.game_state_countdown
-        countdown_start_time = pygame.time.get_ticks() 
-        score = 0
-        game_start_time = 0
-        
-        player_x = self.consts.player_x_start
-        player_y = self.consts.player_y_start
-        player_vx = 0.0
-        player_vy = 0.0
-        
-        missiles = [] 
-        flares = [] 
-        flares_remaining = self.consts.max_flares
-        next_missile_score = self.consts.score_spawn_interval
-        warning_active = False
-        warning_start_time = 0
-        first_missile_spawned = False
+
 
 class EventService():
     def __init__(self):
@@ -346,29 +321,9 @@ class EventService():
         self.consts = Consts()
         self.func = Func()
         self.mydisplay = MyDisplay()
-    
-    def do_event(self, running, current_time):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-                
-            if game_state == self.consts.game_state_gameover and event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    self.reset_game()
-            
-            # --- 스페이스바 플레어 발사 로직 (횟수 제한 적용) ---
-            if game_state == self.consts.game_state_playing and event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    if flares_remaining > 0: 
-                        flare_x = player_x + self.consts.player_size // 2
-                        flare_y = player_y + self.consts.player_size // 2
-                        new_flare = Flare(flare_x, flare_y, current_time)
-                        flares.append(new_flare)
-                        flares_remaining -= 1
 
 class Main():
     def __init__(self):
-        self.running = True
         self.clock = pygame.time.Clock()
         self.colors = Colors()
         self.fonts = Fonts()
@@ -377,20 +332,65 @@ class Main():
         self.mydisplay = MyDisplay()
         self.eventService = EventService()
         self.img = ImgLoad()
+        self.running = True
+    
+        # 게임 변수 초기화 함수
+    def reset_game(self):
+            global game_state, countdown_start_time, score, game_start_time
+            global player_x, player_y, player_vx, player_vy
+            global missiles, next_missile_score
+            global warning_active, warning_start_time, spawn_position
+            global first_missile_spawned 
+            global flares, flares_remaining 
+            
+            game_state = self.consts.game_state_countdown
+            countdown_start_time = pygame.time.get_ticks() 
+            score = 0
+            game_start_time = 0
+            
+            player_x = self.consts.player_x_start
+            player_y = self.consts.player_y_start
+            player_vx = 0.0
+            player_vy = 0.0
+            
+            missiles = [] 
+            flares = [] 
+            flares_remaining = self.consts.max_flares
+            next_missile_score = self.consts.score_spawn_interval
+            warning_active = False
+            warning_start_time = 0
+            first_missile_spawned = False
         
     
     def run(self):
-        self.func.reset_game()
+        self.reset_game()
         global game_state, countdown_start_time, score, game_start_time
         global player_x, player_y, player_vx, player_vy
         global missiles, next_missile_score
         global warning_active, warning_start_time, spawn_position
         global first_missile_spawned 
         global flares, flares_remaining 
+        
+        self.running = True
         while self.running:
             current_time = pygame.time.get_ticks()
-
-            self.eventService.do_event(self.running, current_time)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+                    
+                if game_state == self.consts.game_state_gameover and event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        self.reset_game()
+                
+                # --- 스페이스바 플레어 발사 로직 (횟수 제한 적용) ---
+                if game_state == self.consts.game_state_playing and event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        if flares_remaining > 0: 
+                            flare_x = player_x + self.consts.player_size // 2
+                            flare_y = player_y + self.consts.player_size // 2
+                            new_flare = Flare(flare_x, flare_y, current_time)
+                            flares.append(new_flare)
+                            flares_remaining -= 1
             keys = pygame.key.get_pressed()
             
             if game_state == self.consts.game_state_countdown:
@@ -409,6 +409,7 @@ class Main():
                     self.func.draw_large_text(self.mydisplay.screen, "GO!", self.colors.red)
 
             elif game_state == self.consts.game_state_playing:
+                
                 # 1. 점수 및 미사일 생성/경고 로직
                 time_elapsed_ms = current_time - game_start_time
                 score = int(time_elapsed_ms / 10) 
@@ -462,7 +463,7 @@ class Main():
                     missile.update(player_x, player_y, self.consts.player_size, flares) 
                     
                     player_rect = pygame.Rect(player_x, player_y, self.consts.player_size, self.consts.player_size)
-                    missile_rect = pygame.Rect(missile.x, missile.y, missile.size, missile.size * 2) 
+                    missile_rect = pygame.Rect(missile.x, missile.y, missile.size*0.8, missile.size * 0.8) 
                     
                     if player_rect.colliderect(missile_rect):
                         is_hit = True
@@ -522,11 +523,13 @@ class Main():
                 final_score_rect = final_score_surface.get_rect(center=(self.consts.screen_width // 2, self.consts.screen_height // 2 + 50))
                 self.mydisplay.screen.blit(final_score_surface, final_score_rect)
                 
-                self.func.draw_score(self.mydisplay.screen, "Press SPACE to RESTART", self.colors.white, self.consts.screen_width // 2 + 200, self.consts.screen_height // 2 + 100)
-            
+                self.func.draw_score(self.mydisplay.screen, "Press R to RESTART", self.colors.white, self.consts.screen_width // 2 + 200, self.consts.screen_height // 2 + 100)
+                    
             pygame.display.flip()
             self.clock.tick(60)
+        
+
 main = Main()
+
 main.run()
 pygame.quit()
-
